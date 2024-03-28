@@ -3,7 +3,7 @@
 
 We detail our pretraining hyperparameter values in Table \ref{tab:pretrain_hyperparams} below.
 
-\begin{table}[h]
+\begin{table}[!ht]
 \centering
 \begin{tabular}{p{2cm} p{1.5cm} p{0.7cm} p{1.2cm} p{0.6cm} p{0.6cm} p{0.6cm} p{1cm} p{1.4cm} p{0.8cm} }\\
 
@@ -34,7 +34,7 @@ All finetuning datasets used a maximum sequence length of 256 tokens.
 We found that these values worked well across all tasks for BERT-Base, MosaicBERT-Base, and MosaicBERT-Large; BERT-Large however was somewhat less performant on QQP for some pretraining seeds.
 
 
-\begin{table}[h!]
+\begin{table}[!ht]
 \begin{tabular}{p{1.5cm} p{2cm} p{2.0cm} p{1.5cm} p{2.cm} p{1.0cm} p{1.0cm} }
 \toprule
 Task & learning rate & beta & epsilon & weight decay & epochs & seeds \\ \hline
@@ -83,6 +83,8 @@ We note that the Pareto curve approach discussed here is also related to ``token
 
 
 
+
+
 \begin{figure}
     \centering
     \includegraphics[width=1\textwidth]{figures/bert-large-individual-glue-12-28-145pm.png}
@@ -95,7 +97,7 @@ We note that the Pareto curve approach discussed here is also related to ``token
 
 
 
-\begin{figure}[h!]
+\begin{figure}[!ht]
     \centering
     \includegraphics[width=0.9\textwidth]{figures/seqlen-glue-av-1-15-832pm.png}
     \caption{MosaicBERT-Base Pareto curves for maximum sequence lengths ranging from 128 to 2048 tokens, with all other hyperparameters fixed. (A) Average GLUE score as a function of pretraining steps. (B) Same data as in A, but with wall clock time on the x-axis. The curve representing a maximum sequence length of 128 tokens is mostly Pareto optimal (red curve). Interestingly, training with batch size and sequence length of \{4096,128\} for 178,000 steps (red curve) leads to the same final average GLUE accuracy \textit{and wall clock time} as training with \{4096, 512\} for 70,000 steps (purple curve). Top dashed line represents BERT-Large average (dev) GLUE score from Devlin et al. 2018, while bottom dashed line represents the BERT-Base average (dev) GLUE score from Devlin et al. 2018 \cite{devlin2018bert}.}
