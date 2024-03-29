@@ -91,22 +91,15 @@
 \maketitle
 
 \begin{abstract}
-Although BERT-style encoder models are heavily used in NLP research, many researchers do not pretrain their own BERTs from scratch due to the high cost of training.
-% 
-In the past half-decade since BERT first rose to prominence, many advances have been made with other transformer architectures and training configurations that have yet to be systematically incorporated into BERT.
-% 
-Here, we introduce MosaicBERT, a BERT-style encoder architecture and training recipe that is empirically optimized for fast pretraining.
-% 
-This efficient architecture incorporates FlashAttention, Attention with Linear Biases (ALiBi), Gated Linear Units (GLU), a module to dynamically remove padded tokens, and low precision LayerNorm into the classic transformer encoder block.
-% 
-The training recipe includes a 30\% masking ratio for the Masked Language Modeling (MLM) objective, bfloat16 precision, and vocabulary size optimized for GPU throughput, in addition to best-practices from RoBERTa and other encoder models.
-% 
-When pretrained from scratch on the C4 dataset, this base model achieves a downstream average GLUE (dev) score of 79.6 in 1.13 hours on 8 A100 80 GB GPUs at a cost of roughly \$20.
-% 
-We plot extensive accuracy vs. pretraining speed Pareto curves and show that MosaicBERT base and large are consistently Pareto optimal when compared to a competitive BERT base and large.
-% 
-This empirical speed up in pretraining enables researchers and engineers to pretrain custom BERT-style models at low cost instead of finetune on existing generic models. 
-We open source our model weights and code.
+    Although BERT-style encoder models are heavily used in NLP research, many researchers need to pre-train their BERTs from scratch due to the high cost of training.
+    Since BERT first rose to prominence in the past half-decade, many advances have been made with other transformer architectures and training configurations that have yet to be systematically incorporated into BERT.
+    Here, we introduce MosaicBERT, a BERT-style encoder architecture and training recipe empirically optimized for fast pretraining.
+    This efficient architecture incorporates FlashAttention, Attention with Linear Biases (ALiBi), Gated Linear Units (GLU), a module to dynamically remove padded tokens, and low-precision LayerNorm into the classic transformer encoder block.
+    The training recipe includes a 30\% masking ratio for the Masked Language Modeling (MLM) objective, bfloat16 precision, and vocabulary size optimized for GPU throughput, in addition to best practices from Roberta and other encoder models.
+    When trained from scratch on the C4 dataset, this base model achieves a downstream average GLUE (dev) score of 79.6 in 1.13 hours on 8 A100 80 GB GPUs at the cost of roughly \$20.
+    We plot extensive accuracy vs. pretraining speed Pareto curves and show that MosaicBERT base and large are consistently Pareto optimal when compared to a competitive BERT base and large.
+    This empirical speed-up in pretraining enables researchers and engineers to train custom BERT-style models at low cost instead of fine-tuning existing generic models. 
+    We open-source our model weights and code.
 \end{abstract}
 
 
@@ -414,8 +407,38 @@ While we believe that our training optimization choices for MosaicBERT go a long
 
 Approaches such as knowledge distillation \citep{blakeney2022reduce} might additionally push the Pareto frontier of BERT models during pretraining and finetuning. Progressive layer stacking is one example technique; by initializing a larger BERT model with the weights from smaller pretrained BERT models, pretraining can be reliably accelerated \citep{gong2019efficient,kaddour2023no}. As the field is learning how to optimize stable model training at the billion parameter scale \citep{chowdhery2022palm,dehghani2023scaling}, we expect some of these innovations to cycle back to smaller models such as BERT-Base. For example, it has been hypothesized that incorporating more LayerNorm modules at the QK matrix output (i.e. QK-LayerNorm \citep{henry2020query}) can lead to improved stability during training; combining this with a more aggressive learning rate schedule could lead to faster convergence.
 
+\section{Discussion}
+**How does MosaicBERT optimize for fast pretraining compared to traditional BERT models?**
 
+MosaicBERT optimizes for fast pretraining compared to traditional BERT models through a combination of architectural modifications and training recipe improvements. These optimizations include incorporating FlashAttention, ALiBi, GLU, dynamic unpadding module, and low precision LayerNorm in the encoder architecture [4]. Additionally, MosaicBERT uses a 30\% masking ratio for Masked Language Modeling (MLM) objective, bfloat16 precision, and vocabulary size optimized for GPU throughput [1]. By implementing these changes, MosaicBERT achieves a high GLUE score in a significantly shorter pretraining time of 1.13 hours on 8 GPUs at a lower cost compared to traditional BERT models [1]. The study demonstrates the Pareto optimality of MosaicBERT in terms of pretraining speed and accuracy through extensive accuracy vs. training time Pareto curve comparisons [2]. Furthermore, MosaicBERT offers researchers and engineers an efficient way to pretrain custom BERT-style models at a faster speed and lower cost, thus opening up opportunities for advancements in natural language processing research [1].
 
+**Can you provide more details on how MosaicBERT incorporates FlashAttention, ALiBi, GLU, dynamic unpadding module, and low precision LayerNorm in its encoder architecture to optimize for fast pretraining?**
+
+MosaicBERT incorporates several architectural choices to optimize for fast pretraining.
+
+First, it utilizes FlashAttention, which reduces the number of read/write operations between GPU memory, improving efficiency [4a]. This is combined with Attention with Linear Biases (ALiBi), which eliminates position embeddings and encodes position information directly through the attention operation, biasing attention to nearby tokens and allowing for extrapolation to longer context lengths [4b].
+
+Additionally, MosaicBERT includes Gated Linear Units (GLU) and a dynamic unpadding module. GLU enhances the nonlinear interactions between different tokens, while the dynamic unpadding module removes padded tokens during training, reducing wasted operations on padding tokens [5a][5b].
+
+Finally, MosaicBERT utilizes low precision LayerNorm, running the LayerNorm modules in bfloat16 precision instead of float32 to reduce memory requirements without experiencing numerical instabilities [5c].
+
+By incorporating these modifications into its encoder architecture, MosaicBERT is optimized for fast pretraining, achieving high efficiency and performance in natural language processing tasks at a lower cost and faster speed.
+
+**Can you explain more about the function of the dynamic unpadding module in MosaicBERT?**
+
+The dynamic unpadding module in MosaicBERT is a modification that changes the standard practice of padding sequences of different lengths with special padding tokens in natural language processing tasks. Instead of padding each sequence individually, the dynamic unpadding module concatenates all examples from a minibatch into a single sequence of batch size 1. This approach eliminates the need to perform operations on padding tokens during training, leading to speed improvements. Research by NVIDIA and others has shown that this method can enhance training efficiency by reducing the wasted operations on padding tokens [66]. In summary, the dynamic unpadding module in MosaicBERT optimizes training speed by streamlining the processing of text sequences during pretraining tasks in NLP research.
+
+**Are there any potential drawbacks to using the dynamic unpadding module in MosaicBERT, such as increased memory usage or longer training times?**
+
+The dynamic unpadding module in MosaicBERT does not appear to have any potential drawbacks in terms of increased memory usage or longer training times. In fact, the module is implemented to improve training efficiency by removing operations on padding tokens, leading to speed improvements during training [5]. Overall, the modifications introduced in MosaicBERT, including the dynamic unpadding module, are aimed at optimizing pretraining efficiency without sacrificing accuracy or increasing resource requirements [1]. Therefore, it can be inferred that the dynamic unpadding module in MosaicBERT is designed to enhance training speed rather than introduce any negative effects on memory usage or training duration.
+
+**Can you explain the concept of Pareto optimality as demonstrated in the study, and how it relates to the trade-offs between pretraining speed and accuracy?**
+
+Pareto optimality, as demonstrated in the study, refers to finding the best possible trade-off between two conflicting objectives, in this case, pretraining speed and accuracy. By plotting accuracy vs. training time Pareto curves, the study shows that MosaicBERT is Pareto optimal relative to traditional BERT models across different training durations. This means that MosaicBERT achieves superior accuracy within various training budgets while keeping other factors constant[16].
+
+The study uses Pareto curves to compare different models and configurations based on how they balance accuracy and training time. These curves help assess the trade-offs between architectural changes that may improve efficiency but have different effects on speed and accuracy. By generating and analyzing Pareto curves, the study provides a comprehensive view of how different choices in model architecture and training impact the overall performance[2].
+
+In essence, Pareto optimality in this study highlights how architectural modifications in MosaicBERT lead to improvements in both pretraining speed and accuracy compared to traditional BERT models, showcasing the benefits of optimizing the model for efficiency in natural language processing research.
 
 \section{Conclusion} 
 
