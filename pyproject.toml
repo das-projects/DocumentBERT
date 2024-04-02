@@ -1,29 +1,3 @@
-[tool.pytest.ini_options]
-addopts = [
-  "--color=yes",
-  "--durations=0",
-  "--strict-markers",
-  "--doctest-modules",
-]
-filterwarnings = [
-  "ignore::DeprecationWarning",
-  "ignore::UserWarning",
-]
-log_cli = "True"
-markers = [
-  "slow: slow tests",
-]
-minversion = "6.0"
-testpaths = "tests/"
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: nocover",
-    "raise NotImplementedError",
-    "raise NotImplementedError()",
-    "if __name__ == .__main__.:",
-]
-
 [project]
 authors = [{ name = "Arijit Das", email = "arijit.das@selfsupervised.de" }]
 dependencies = ["lightning", "hydra-core", "typer", "pydantic"]
@@ -96,6 +70,10 @@ exclude_lines = [
     "pragma: no cover",
     # Don't complain if tests don't hit defensive assertion code:
     "except pkg_resources.DistributionNotFound",
+    "pragma: nocover",
+    "raise NotImplementedError",
+    "raise NotImplementedError()",
+    "if __name__ == .__main__.:",
 ]
 
 [tool.coverage.html]
@@ -159,7 +137,25 @@ extension-pkg-whitelist = "pydantic"
 
 
 [tool.pytest.ini_options]
-addopts = "--junitxml=reports/test-result.xml --html=reports/test-report.html --self-contained-html"
+addopts = [
+  "--junitxml=reports/test-result.xml",
+  "--html=reports/test-report.html",
+  "--self-contained-html",
+  "--color=yes",
+  "--durations=0",
+  "--strict-markers",
+  "--doctest-modules",
+]
+filterwarnings = [
+  "ignore::DeprecationWarning",
+  "ignore::UserWarning",
+]
+log_cli = "True"
+markers = [
+  "slow: slow tests",
+]
+minversion = "6.0"
+testpaths = "tests/"
 junit_family = "xunit2"
 log_level = "INFO"
 pythonpath = "src/"
