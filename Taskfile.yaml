@@ -30,18 +30,6 @@ includes:
       REPOSITORY_NAME: processing
       REQUIREMENTS_FILE: requirements/processing.txt
       BUILD_TARGET: processing
-  spark:docker:
-    taskfile: tasks/docker.yaml
-    vars:
-      REPOSITORY_NAME: spark
-      REQUIREMENTS_FILE: requirements/processing.txt
-      BUILD_TARGET: spark
-      # Override the base build and runtime image to use the SageMaker processing images.
-      # Note the YAML multiline syntax |- to remove the last newline
-      # https://yaml-multiline.info
-      BUILD_FLAGS: |-
-        --build-arg=BUILD_BASE=571004829621.dkr.ecr.eu-west-1.amazonaws.com/sagemaker-spark-processing:3.3-cpu-py39-v1.2 \
-        --build-arg=RUNTIME_BASE=571004829621.dkr.ecr.eu-west-1.amazonaws.com/sagemaker-spark-processing:3.3-cpu-py39-v1.2
 
 tasks:
   build-all:
@@ -51,14 +39,11 @@ tasks:
     - task: serving:docker:push
     - task: processing:docker:build
     - task: processing:docker:push
-    - task: spark:docker:build
-    - task: spark:docker:push
 
   create-all-repositories:
     - task: training:docker:create-ecr-repository
     - task: serving:docker:create-ecr-repository
     - task: processing:docker:create-ecr-repository
-    - task: spark:docker:create-ecr-repository
 
   doc:
     desc: Create source code documentation

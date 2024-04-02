@@ -58,4 +58,3 @@ TAGS_STEP = {
         {"Key": "role", "Value": f"gaa_{USECASE_NAME}_mdev_data-scientist"},
     ],
 }
-

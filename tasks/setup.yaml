@@ -13,13 +13,15 @@ tasks:
       variable PYTHON_BINARY to point to the correct binary.
     cmds:
       - task: environment
-      - task: sync-dependencies
+      - task: update-dependencies
       - task: pre-commit
 
   environment:
     internal: true
     cmds:
       - ${PYTHON_BINARY:-python3.9} -m venv .venv
+      - source .venv/bin/activate
+      - pip install pip-tools pip uv --upgrade
 
   update-dependencies:
     desc: Compile and install dependencies
@@ -35,8 +37,9 @@ tasks:
       use of -P to upgrade individual packages, e.g. '-P pandas', and use of
       -U to upgrade all packages to their latest version.
     cmds:
-      - ".venv/bin/pip install pip-tools pip --upgrade"
-      - ".venv/bin/pip-compile  {{.COMPILE_FLAGS}} --all-extras pyproject.toml -o requirements/requirements.txt {{.CLI_ARGS}}"
+      - source .venv/bin/activate
+      - pip install pip-tools pip uv --upgrade
+      - "uv pip compile  {{.COMPILE_FLAGS}} --all-extras pyproject.toml -o requirements/requirements.txt {{.CLI_ARGS}}"
       - "{{.SUBSET_COMPILE_COMMAND}} --extra training -o requirements/training.txt"
       - "{{.SUBSET_COMPILE_COMMAND}} --extra serving -o requirements/serving.txt"
       - "{{.SUBSET_COMPILE_COMMAND}} --extra processing -o requirements/processing.txt"
@@ -48,7 +51,7 @@ tasks:
       # Instead of creating a temporary constraint file, we are piping the constraint command to STDIN of
       # pip compile. We are omitting the header and annotation, as these files don't make sense on their own.
       # Inspect the requirements.txt to trace the origin of the packages.
-      SUBSET_COMPILE_COMMAND: echo "-c $(pwd)/requirements/requirements.txt" | .venv/bin/pip-compile --no-annotate --no-header {{.COMPILE_FLAGS}} - pyproject.toml
+      SUBSET_COMPILE_COMMAND: echo "-c $(pwd)/requirements/requirements.txt" | uv pip compile --no-annotate --no-header {{.COMPILE_FLAGS}} - pyproject.toml
 
   sync-dependencies:
     desc: Install dependencies
@@ -56,19 +59,10 @@ tasks:
       Uses pip-sync to install the development dependencies
       in the current virtual environment.
     cmds:
-      - ".venv/bin/pip install pip-tools pip --upgrade"
-      - ".venv/bin/pip-sync requirements/requirements.txt"
-      - ".venv/bin/pip install -e ."
+      - source .venv/bin/activate
+      - pip install pip-tools pip uv --upgrade
+      - "uv pip sync requirements/requirements.txt"
+      - "uv pip install -e ."
 
   pre-commit:
     - ".venv/bin/pre-commit install --install-hooks"
-
-  jenkins-dependencies:
-    desc: Compile and install relevant dependencies for jenkins integration
-    summary: |
-      Installs and updates java runtime environment, pip and pip-tools.
-      Installs all fixed dependencies from requirement*.txt files.
-    cmds:
-      - apt-get -qq -y update && apt-get -qq -y install default-jre
-      - task: environment
-      - task: sync-dependencies

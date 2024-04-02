@@ -1,11 +1,21 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools", "setuptools-scm"]
+
 [project]
-authors = [{ name = "Arijit Das", email = "arijit.das@selfsupervised.de" }]
-dependencies = ["lightning", "hydra-core", "typer", "pydantic"]
-description = ""
-name = "mlops-template"
-readme = "readme.md"
+name = "documentbert"
+version = "0.1.0"
 requires-python = "~=3.9.0"
-version = "1.0"
+readme = "README.md"
+authors = [{ name = "Arijit Das", email = "arijit.das@ergo.de" }]
+dependencies = ["lightning", "hydra-core", "typer", "pydantic"]
+description = "DocumentBERT: A Blazing Fast Document Embedding Model"
+keywords = ["BERT", "LLM", "torch", "lightning", "MLOPs"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python"
+]
+
 
 [project.optional-dependencies]
 # Declare all project dependencies as optional to define sets of
@@ -26,32 +36,27 @@ development = [
     "pytest-sugar",
 ]
 pipelines = ["sagemaker>=2.167.0", "python-dotenv"]
-notebook = ["ipykernel"]
-processing = ["pandas", "pyarrow"]
+processing = ["pandas", "pyarrow", "litdata"]
 serving = [
     "fastapi",
-    "ray[serve]"
+    "uvicorn",
 ]
 training = [
-    "keras",
-    "pandas",
-    "pyarrow",
-    "scikit-learn",
-    "tensorflow",
-    "urllib3",
+    "torch",
+    "torchvision",
+    "lightning",
+    "torchmetrics",
+    "hydra-core",
+    "hydra-colorlog",
+    "hydra-optuna-sweeper",
+    "mlflow", 
+    "aim-mlflow",
+    "rootutils",
 ]
-# We are using the Spark distribution provided by
-# AWS Processing images. Therefore Spark and its dependencies
-# need to be pinned to the version in the image
-spark = ["py4j==0.10.9.5", "pyspark==3.3.1"]
 
 [project.scripts]
 processing = "project.example_processing.cli:app"
 training = "project.example_model.cli:app"
-
-[build-system]
-build-backend = "setuptools.build_meta"
-requires = ["setuptools", "setuptools-scm"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -137,15 +142,7 @@ extension-pkg-whitelist = "pydantic"
 
 
 [tool.pytest.ini_options]
-addopts = [
-  "--junitxml=reports/test-result.xml",
-  "--html=reports/test-report.html",
-  "--self-contained-html",
-  "--color=yes",
-  "--durations=0",
-  "--strict-markers",
-  "--doctest-modules",
-]
+addopts = "--junitxml=reports/test-result.xml --html=reports/test-report.html --self-contained-html"
 filterwarnings = [
   "ignore::DeprecationWarning",
   "ignore::UserWarning",
@@ -159,5 +156,4 @@ testpaths = "tests/"
 junit_family = "xunit2"
 log_level = "INFO"
 pythonpath = "src/"
-testpaths = ["tests"]
 xfail_strict = "True"
