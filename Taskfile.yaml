@@ -1,0 +1,71 @@
+# https://taskfile.dev
+
+version: "3"
+
+dotenv:
+  - "usecase.env"
+  - ".env"
+
+includes:
+  setup: tasks/setup.yaml
+  qa: tasks/qa.yaml
+  training:docker:
+    taskfile: tasks/docker.yaml
+    vars:
+      REPOSITORY_NAME: training
+      REQUIREMENTS_FILE: requirements/training.txt
+      BUILD_TARGET: training
+  serving:docker:
+    taskfile: tasks/docker.yaml
+    vars:
+      REPOSITORY_NAME: serving
+      REQUIREMENTS_FILE: requirements/serving.txt
+      BUILD_TARGET: serving
+      IMAGE_SCANNING: true
+  serving:
+    taskfile: tasks/serving.yaml
+  processing:docker:
+    taskfile: tasks/docker.yaml
+    vars:
+      REPOSITORY_NAME: processing
+      REQUIREMENTS_FILE: requirements/processing.txt
+      BUILD_TARGET: processing
+  spark:docker:
+    taskfile: tasks/docker.yaml
+    vars:
+      REPOSITORY_NAME: spark
+      REQUIREMENTS_FILE: requirements/processing.txt
+      BUILD_TARGET: spark
+      # Override the base build and runtime image to use the SageMaker processing images.
+      # Note the YAML multiline syntax |- to remove the last newline
+      # https://yaml-multiline.info
+      BUILD_FLAGS: |-
+        --build-arg=BUILD_BASE=571004829621.dkr.ecr.eu-west-1.amazonaws.com/sagemaker-spark-processing:3.3-cpu-py39-v1.2 \
+        --build-arg=RUNTIME_BASE=571004829621.dkr.ecr.eu-west-1.amazonaws.com/sagemaker-spark-processing:3.3-cpu-py39-v1.2
+
+tasks:
+  build-all:
+    - task: training:docker:build
+    - task: training:docker:push
+    - task: serving:docker:build
+    - task: serving:docker:push
+    - task: processing:docker:build
+    - task: processing:docker:push
+    - task: spark:docker:build
+    - task: spark:docker:push
+
+  create-all-repositories:
+    - task: training:docker:create-ecr-repository
+    - task: serving:docker:create-ecr-repository
+    - task: processing:docker:create-ecr-repository
+    - task: spark:docker:create-ecr-repository
+
+  doc:
+    desc: Create source code documentation
+    summary: |
+      Create source code documentation in docs using sphinx. Open ./docs/build/html/index.html to view output
+    cmds:
+      - sphinx-apidoc -f -o ./source/ ../src
+      - make clean
+      - make html
+    dir: docs

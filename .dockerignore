@@ -1,0 +1,10 @@
+# Make Docker context explicit
+# Ignore all files and folders...
+*
+# Except what is required to build the Python applications
+!/src/project
+!/requirements
+!/scripts
+
+!/pyproject.toml
+!/readme.md

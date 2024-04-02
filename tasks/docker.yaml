@@ -1,0 +1,76 @@
+# https://taskfile.dev
+
+version: "3"
+
+tasks:
+  login:
+    desc: Log into all required AWS ECR registries
+    run: once
+    cmds:
+      - aws ecr get-login-password --region ${USECASE_AWS_REGION} | docker login --username AWS --password-stdin ${USECASE_AWS_REGISTRY}
+      - aws ecr get-login-password --region ${USECASE_AWS_REGION} | docker login --username AWS --password-stdin ${USECASE_REGISTRY}
+
+  build:
+    desc: Build the Docker image
+    summary: |
+      Builds the Docker image with the current Git commit
+      as the current tag.
+    env:
+      DOCKER_BUILDKIT: 1
+    preconditions:
+      - msg: Please commit your changes before building a Docker image
+        sh: '[ -z "$(git status --porcelain)" ]'
+    deps:
+      - login
+    cmds:
+      - |
+        docker build \
+          --tag ${USECASE_REGISTRY}/${USECASE_NAME}/{{.REPOSITORY_NAME}}:{{.GIT_COMMIT_SHA}} \
+          --tag ${USECASE_NAME}/{{.REPOSITORY_NAME}}:{{.GIT_COMMIT_SHA}} \
+          --tag ${USECASE_NAME}/{{.REPOSITORY_NAME}}:latest \
+          --build-arg=REQUIREMENTS_FILE={{.REQUIREMENTS_FILE}} \
+          --build-arg=PIP_INDEX_URL=${PIP_INDEX_URL} \
+          --build-arg=PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} \
+          --build-arg=REQUIREMENTS_FILE={{.REQUIREMENTS_FILE}} \
+          --label GIT_COMMIT={{.GIT_COMMIT_SHA}} \
+          --target={{.BUILD_TARGET}} \
+          {{.BUILD_FLAGS}} \
+          .
+    vars:
+      GIT_COMMIT_SHA:
+        sh: git rev-parse --short HEAD
+
+  push:
+    desc: Push the Docker image
+    deps:
+      - login
+    preconditions:
+      - msg: Please build an image for the current Git commit first
+        sh: docker image inspect {{.IMAGE}}
+    vars:
+      GIT_COMMIT_SHA:
+        sh: git rev-parse --short HEAD
+      IMAGE: ${USECASE_REGISTRY}/${USECASE_NAME}/{{.REPOSITORY_NAME}}:{{.GIT_COMMIT_SHA}}
+    cmds:
+      - docker push {{.IMAGE}}
+
+  cleanup:
+    desc: Clean up the Docker system
+    summary: |
+      Uses a Docker system prune to delete all
+      local images and clean up the caches. Docker
+      builds will take longer after this command
+      but local disk space will be freed up.
+    cmds:
+      - docker system prune --all --force
+
+  create-ecr-repository:
+    desc: Create an ECR repository for the Docker image
+    summary: |
+      Creates an ECR repository. When including this taskfile
+      for a specific image, you can set the variable IMAGE_SCANNING
+      to true to enable ECR image scanning.
+    status:
+      - aws ecr describe-repositories --repository-name ${USECASE_NAME}/{{.REPOSITORY_NAME}}
+    cmds:
+      - aws ecr create-repository --repository-name ${USECASE_NAME}/{{.REPOSITORY_NAME}} --image-tag-mutability IMMUTABLE --image-scanning-configuration scanOnPush={{.IMAGE_SCANNING | default "false"}}

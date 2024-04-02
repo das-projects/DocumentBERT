@@ -1,0 +1,50 @@
+# https://taskfile.dev
+
+version: "3"
+
+tasks:
+  default:
+    - task: format
+    - task: pylint
+    - task: mypy
+    - task: pytest
+
+  pytest:
+    cmds:
+      - ".venv/bin/pytest --cov=src/project tests"
+
+  mypy:
+    - ".venv/bin/mypy src tests"
+
+  pylint:
+    env:
+      PYTHONPATH: src/
+    cmds:
+      - mkdir -p reports
+      - ".venv/bin/pylint src tests"
+      - |
+        if [ -s reports/pylint.json ]; then
+          .venv/bin/pylint-json2html -f json reports/pylint.json -o reports/pylint.html
+        else
+          echo "nothing to complain"
+        fi
+
+  format:
+    cmds:
+      - ".venv/bin/black src tests {{.FLAGS}}"
+      - ".venv/bin/isort src tests {{.FLAGS}}"
+
+  tests:
+    desc: Run all tests against the local code
+    cmds:
+      - task: format
+        vars:
+          FLAGS: "--check "
+      - task: mypy
+      - task: pylint
+      - task: pytest
+
+  precommit:
+    desc: Run formatting and mypy tests against the local code
+    cmds:
+      - task: format

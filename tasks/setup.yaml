@@ -1,0 +1,74 @@
+# https://taskfile.dev
+
+version: "3"
+
+tasks:
+  default:
+    desc: Set up a Python virtual environment
+    summary: |
+      Uses the venv module to create a Python virtual environment
+      in .venv in the current project repository. The command will
+      look for the python3.9 binary in the current path. If your
+      python3.9 binary is not the in path, you can set the environment
+      variable PYTHON_BINARY to point to the correct binary.
+    cmds:
+      - task: environment
+      - task: sync-dependencies
+      - task: pre-commit
+
+  environment:
+    internal: true
+    cmds:
+      - ${PYTHON_BINARY:-python3.9} -m venv .venv
+
+  update-dependencies:
+    desc: Compile and install dependencies
+    summary: |
+      Installs and updates pip and pip-tools and compiles
+      all dependencies from the pyproject.toml. It first compiles
+      the dependencies with --all-extras to compile a consistent,
+      compatible set of dependencies. This set of dependencies is
+      used as an constraint for required subsets of dependencies, e.g.
+      to only compile dependencies for serving.
+
+      The cli args are forwarded to the initial pip-compile call, enabling
+      use of -P to upgrade individual packages, e.g. '-P pandas', and use of
+      -U to upgrade all packages to their latest version.
+    cmds:
+      - ".venv/bin/pip install pip-tools pip --upgrade"
+      - ".venv/bin/pip-compile  {{.COMPILE_FLAGS}} --all-extras pyproject.toml -o requirements/requirements.txt {{.CLI_ARGS}}"
+      - "{{.SUBSET_COMPILE_COMMAND}} --extra training -o requirements/training.txt"
+      - "{{.SUBSET_COMPILE_COMMAND}} --extra serving -o requirements/serving.txt"
+      - "{{.SUBSET_COMPILE_COMMAND}} --extra processing -o requirements/processing.txt"
+      - task: sync-dependencies
+    vars:
+      COMPILE_FLAGS: --resolver=backtracking --strip-extras
+      # Workaround to get layered constraints working with pyproject.toml
+      # Ref: https://github.com/jazzband/pip-tools/issues/1364#issuecomment-813942480
+      # Instead of creating a temporary constraint file, we are piping the constraint command to STDIN of
+      # pip compile. We are omitting the header and annotation, as these files don't make sense on their own.
+      # Inspect the requirements.txt to trace the origin of the packages.
+      SUBSET_COMPILE_COMMAND: echo "-c $(pwd)/requirements/requirements.txt" | .venv/bin/pip-compile --no-annotate --no-header {{.COMPILE_FLAGS}} - pyproject.toml
+
+  sync-dependencies:
+    desc: Install dependencies
+    summary: |
+      Uses pip-sync to install the development dependencies
+      in the current virtual environment.
+    cmds:
+      - ".venv/bin/pip install pip-tools pip --upgrade"
+      - ".venv/bin/pip-sync requirements/requirements.txt"
+      - ".venv/bin/pip install -e ."
+
+  pre-commit:
+    - ".venv/bin/pre-commit install --install-hooks"
+
+  jenkins-dependencies:
+    desc: Compile and install relevant dependencies for jenkins integration
+    summary: |
+      Installs and updates java runtime environment, pip and pip-tools.
+      Installs all fixed dependencies from requirement*.txt files.
+    cmds:
+      - apt-get -qq -y update && apt-get -qq -y install default-jre
+      - task: environment
+      - task: sync-dependencies

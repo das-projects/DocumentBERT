@@ -1,0 +1,59 @@
+# https://taskfile.dev
+
+version: "3"
+
+tasks:
+  run-local:
+    summary: Run ray serve in the local environment
+    desc: |
+      This command first starts a local ray cluster
+      and enables ray serve on it. It then deploys the
+      desired ray serving application to it. If this
+      command is interrupted by hitting ctrl-c, the
+      ray cluster will be stopped using Task's defer
+      functionality.
+
+      You can adjust the (simulated) number of CPUs
+      in the local cluster by adjusting --num-cpus. This
+      defaults to the number of CPUs in you local system,
+      which might not be enough to deploy all required ray
+      services, as ray allocates a full CPU to each service.
+
+      We also set the environment variable MODEL_PATH to our
+      local model dir to test our model loading code. The serving
+      examples in this repository use PyDantic BaseSettings to parse
+      this environment variable and pass it to the deployments. See
+      the code at src/project/example_serving/single.py
+    env:
+      MODEL_PATH: "{{.TASKFILE_DIR}}/local/model"
+    cmds:
+      - defer: .venv/bin/ray stop
+      - .venv/bin/ray start --num-cpus 8 --disable-usage-stats --head
+      - .venv/bin/serve start --http-port 8080
+      - .venv/bin/serve run project.example_serving.single:handle
+
+  run-docker-single:
+    summary: Run ray serve in a Docker image
+    cmds:
+      - mkdir -p local/model
+      - |
+        docker run \
+          -p 8080:8080 \
+          -v {{.TASKFILE_DIR}}/local/model:/opt/ml/model:ro \
+          -e RAY_SERVE_RUN_ARGS=project.example_serving.single:handle \
+          -e RAY_NUM_CPUS=8 \
+          --rm -it \
+          ${USECASE_NAME}/serving:latest
+
+  run-docker-multi:
+    summary: Run ray serve in a Docker image
+    cmds:
+      - mkdir -p local/model
+      - |
+        docker run \
+        -p 8080:8080 \
+        -v {{.TASKFILE_DIR}}/local/model:/opt/ml/model:ro \
+        -e RAY_SERVE_RUN_ARGS=project.example_serving.multi:handle \
+        -e RAY_NUM_CPUS=8 \
+        --rm -it \
+        ${USECASE_NAME}/serving:latest

@@ -23,3 +23,145 @@ exclude_lines = [
     "raise NotImplementedError()",
     "if __name__ == .__main__.:",
 ]
+
+[project]
+authors = [{ name = "Arijit Das", email = "arijit.das@selfsupervised.de" }]
+dependencies = ["lightning", "hydra-core", "typer", "pydantic"]
+description = ""
+name = "mlops-template"
+readme = "readme.md"
+requires-python = "~=3.9.0"
+version = "1.0"
+
+[project.optional-dependencies]
+# Declare all project dependencies as optional to define sets of
+# dependencies that are used by pip-tools to compile subsets
+# of dependencies as required. See tasks/setup.yaml for details.
+development = [
+    "black",
+    "isort",
+    "mypy",
+    "pre-commit",
+    "py",
+    "pylint",
+    "pylint-json2html",
+    "pytest",
+    "pytest-cov",
+    "pytest-html",
+    "pytest-mock",
+    "pytest-sugar",
+]
+pipelines = ["sagemaker>=2.167.0", "python-dotenv"]
+notebook = ["ipykernel"]
+processing = ["pandas", "pyarrow"]
+serving = [
+    "fastapi",
+    "ray[serve]"
+]
+training = [
+    "keras",
+    "pandas",
+    "pyarrow",
+    "scikit-learn",
+    "tensorflow",
+    "urllib3",
+]
+# We are using the Spark distribution provided by
+# AWS Processing images. Therefore Spark and its dependencies
+# need to be pinned to the version in the image
+spark = ["py4j==0.10.9.5", "pyspark==3.3.1"]
+
+[project.scripts]
+processing = "project.example_processing.cli:app"
+training = "project.example_model.cli:app"
+
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools", "setuptools-scm"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 120
+
+[tool.coverage.run]
+omit = ["src/example*", "src/project/example*"]
+source = ["src"]
+
+[tool.coverage.report]
+# Regexes for lines to exclude from consideration
+exclude_lines = [
+    # Have to re-enable the standard pragma
+    "pragma: no cover",
+    # Don't complain if tests don't hit defensive assertion code:
+    "except pkg_resources.DistributionNotFound",
+]
+
+[tool.coverage.html]
+directory = "reports/code_coverage"
+
+[tool.coverage.xml]
+output = "reports/coverage-result.xml"
+
+
+[tool.isort]
+profile = 'black'
+
+
+[tool.mypy]
+ignore_missing_imports = true
+# exclude = ['.example.']
+
+[[tool.mypy.overrides]]
+module = "project.example_serving.*"
+disable_error_code = [
+    "attr-defined",
+]
+
+[tool.pylint.main]
+# Specify a score threshold to be exceeded before program exits with error.
+fail-under = 9
+
+# Use multiple processes to speed up Pylint.
+jobs = 2
+
+# Discover python modules and packages in the file system subtree.
+recursive = "y"
+
+# List of plugins (as comma separated values of python module names) to load,
+# usually to register additional checkers.
+ignore-patterns = ".*example.*"
+load-plugins = "pylint_json2html"
+# init-hook='from pylint.config import find_default_config_files; import os, sys; sys.path.append(os.path.join(os.path.dirname(next(find_default_config_files())),"src/project")); print(sys.path)'
+
+[tool.pylint.format]
+max-line-length = "120"
+
+[tool.pylint.typecheck]
+generated-members = ["numpy.*", "torch.*"]
+
+[tool.pylint.basic]
+good-names = ["Run", "_", "df", "ex", "i", "j", "k", "x", "y"]
+
+[tool.pylint.reports]
+# Set the output format. Available formats are text, parseable, colorized, json
+# and msvs (visual studio).
+output-format = "text,json:reports/pylint.json"
+# Tells whether to display a full report or only the messages.
+reports = "yes"
+# Activate the evaluation score.
+score = "yes"
+
+[tool.pylint.'MESSAGES CONTROL']
+disable = "duplicate-code"
+extension-pkg-whitelist = "pydantic"
+
+
+[tool.pytest.ini_options]
+addopts = "--junitxml=reports/test-result.xml --html=reports/test-report.html --self-contained-html"
+junit_family = "xunit2"
+log_level = "INFO"
+pythonpath = "src/"
+testpaths = ["tests"]
+xfail_strict = "True"
