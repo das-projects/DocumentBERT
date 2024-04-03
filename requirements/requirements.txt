@@ -575,7 +575,7 @@ websockets==12.0
     # via aim
 werkzeug==2.3.7
     # via flask
-wrapt==1.15.0
+wrapt==1.16.0
     # via astroid
 yarl==1.9.2
     # via aiohttp
