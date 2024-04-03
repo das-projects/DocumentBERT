@@ -408,7 +408,7 @@ python-dateutil==2.8.2
     #   botocore
     #   matplotlib
     #   pandas
-python-dotenv==1.0.0
+python-dotenv==1.0.1
     # via rootutils
 python-multipart==0.0.9
     # via lightning-cloud
