@@ -315,7 +315,7 @@ omegaconf==2.3.0
     # via hydra-core
 optuna==2.10.1
     # via hydra-optuna-sweeper
-packaging==23.1
+packaging==24.0
     # via
     #   aim
     #   black
