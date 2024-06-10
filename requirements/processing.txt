@@ -45,7 +45,7 @@ nvidia-nvjitlink-cu12==12.4.99
 nvidia-nvtx-cu12==12.1.105
 objprint==0.2.3
 omegaconf==2.3.0
-packaging==23.1
+packaging==24.1
 pandas==2.1.1
 pillow==10.3.0
 pyarrow==13.0.0
